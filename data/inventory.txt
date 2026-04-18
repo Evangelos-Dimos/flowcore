@@ -1,0 +1,2 @@
+product_id,product_type,location
+P1,laptop,RACK_A
