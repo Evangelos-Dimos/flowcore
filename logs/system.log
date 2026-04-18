@@ -10,3 +10,14 @@
 [INFO] Inventory reset
 [INFO] Stored 55555 in RACK_A
 [INFO] Stored 864735 in RACK_A
+[INFO] Stored hgugg in RACK_A
+[ERROR] laptop must be stored in RACK_A, not RACK_B
+[INFO] Stored hgugg in RACK_A
+[INFO] Stored hgugg in RACK_A
+[ERROR] RACK_A is full
+[INFO] Inventory reset
+[ERROR] tablet must be stored in RACK_B, not RACK_A
+[ERROR] tablet must be stored in RACK_B, not RACK_C
+[INFO] Stored logitec in RACK_B
+[ERROR] Missing input
+[INFO] Stored 52424 in 3
