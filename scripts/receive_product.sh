@@ -22,8 +22,8 @@ if [ -z "$ALLOWED_LOCATION" ]; then
 	exit 1 ##στοπ script
 fi
 
-#αποθηκευση προιοντος στο inventory
-echo "$PRODUCT_ID,$PRODUCT_TYPE,$QUANTITY" >> ../data/inventory.txt  # append στο αρχειο
+#αποθηκευση προιοντος στο pending
+echo "$PRODUCT_ID,$PRODUCT_TYPE,$QUANTITY" >> ../data/pending.txt  # append στο αρχειο
 
 #καταγραφη σωστης ενεργειας
 echo "[INFO] Stored $PRODUCT_ID in $QUANTITY" >> ../logs/system.log  # log info
