@@ -1,2 +1,2 @@
-logitec,tablet,RACK_B
-52424,laptop,3
+
+1,Laptop,4,RACK_A
