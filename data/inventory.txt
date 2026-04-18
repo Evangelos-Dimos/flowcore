@@ -1,2 +1,3 @@
 product_id,product_type,location
-P1,laptop,RACK_A
+55555,laptop,RACK_A
+864735,laptop,RACK_A

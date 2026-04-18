@@ -1,2 +1,12 @@
 [INFO] Stored P1 in RACK_A
 [ERROR] laptop must be stored in RACK_A, not RACK_B
+[INFO] Stored o2 in RACK_A
+[ERROR] RACK_A is full
+[ERROR] RACK_A is full
+[INFO] Stored 767517 in RACK_A
+[INFO] Stored rx8 in RACK_A
+[INFO] Stored hgy3 in RACK_A
+[ERROR] RACK_A is full
+[INFO] Inventory reset
+[INFO] Stored 55555 in RACK_A
+[INFO] Stored 864735 in RACK_A

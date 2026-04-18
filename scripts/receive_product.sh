@@ -29,9 +29,21 @@ if [ "$LOCATION" != "$ALLOWED_LOCATION" ]; then
 	exit 1 #στοπ script
 fi
 
+#μετραει ποσο προιοντα υπαρχουν ηδη στο συγκεκριμενο location/rack
+COUNT=$(grep -c ",$LOCATION$" ../data/inventory.txt)
+
+#ελεγχος αν εχει γεμισει το lacation/rack
+if [ "$COUNT" -ge "$MAX_ITEMS_PER_LOCATION" ]; then
+	echo "[ERROR] $LOCATION is full" >> ../logs/system.log  # error στο log
+	echo "Location is full"  # μηνυμα στον user
+	exit 1  #στοπ script
+fi
+
 #αποθηκευση προιοντος στο inventory
 echo "$PRODUCT_ID,$PRODUCT_TYPE,$LOCATION" >> ../data/inventory.txt  # append στο αρχειο
+NEW_COUNT=$(grep -c ",$LOCATION$" ../data/inventory.txt)
 
 #καταγραφη σωστης ενεργειας
 echo "[INFO] Stored $PRODUCT_ID in $LOCATION" >> ../logs/system.log  # log info
-echo "Product stored successfully."
+echo "Product stored successfully. Items in $LOCATION: $NEW_COUNT"
+
