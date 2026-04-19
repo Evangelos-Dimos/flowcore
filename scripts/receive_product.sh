@@ -1,30 +1,33 @@
 source ../config/warehouse.conf
 
-PRODUCT_ID=$1	#παιρνει το 1ο argument (id προιοντος)
-PRODUCT_TYPE=$2	#παιρνει το 2ο argument (τυπος προιοντος)
-QUANTITY=$3	#παιρνει το 3ο argument (location/rack)
+PRODUCT_ID=$1   #1st argument id product
+PRODUCT_TYPE=$2 #2nd argument product type
+QUANTITY=$3     #3rd argument quantity
 
-#ελεγχος αν λειπουν οι παραμετροι
+#Checks if there are all the arguments
 if [ -z "$PRODUCT_ID" ] || [ -z "$PRODUCT_TYPE" ] || [ -z "$QUANTITY" ]; then
-	echo "[ERROR] Missing input" >> ../logs/system.log #error στο log
-	echo "Usage: ./receive_product.sh <id> <type> <quantity>" #Σωστη χρηση
-	exit 1 #στοπ script
+        echo "[ERROR] Missing input" >> ../logs/system.log 
+        echo "Arguments missing - Usage: ./receive_product.sh <id> <type> <quantity>" 
+        exit 1 
 fi
 
-#δημιουργει δυναμικα το ονομα της μεταβλητης config
-VAR_NAME="ALLOWED_LOCATIONS_${PRODUCT_TYPE}" 
+#Checks if type of product is valid
+VALID=0
+for type in $VALID_TYPES;
+    do
+        if [ "$PRODUCT_TYPE" = "$type" ]; then
+                VALID=1
+        fi
+    done
 
-ALLOWED_LOCATION=${!VAR_NAME}
-
-if [ -z "$ALLOWED_LOCATION" ]; then
-	echo "[ERROR] Unknown product type: $PRODUCT_TYPE" >> ../logs/system.log #error στο log
-	echo "Invalid product type" #μηνυμα στον user
-	exit 1 ##στοπ script
+if [ "$VALID" -eq 0 ]; then
+        echo "[ERROR] Unknown product type: $PRODUCT_TYPE" >> ../logs/system.log
+        echo "Invalid product type. Valid types: $VALID_TYPES"
+        exit 1
 fi
 
-#αποθηκευση προιοντος στο pending
-echo "$PRODUCT_ID,$PRODUCT_TYPE,$QUANTITY" >> ../data/pending.txt  # append στο αρχειο
+#Sending the product to pending 
+echo "$PRODUCT_ID,$PRODUCT_TYPE,$QUANTITY" >> ../data/pending.txt  
 
-#καταγραφη σωστης ενεργειας
-echo "[INFO] Stored $PRODUCT_ID in $QUANTITY" >> ../logs/system.log  # log info
-
+#Adds the message to log
+echo "[INFO] Stored $PRODUCT_ID in $QUANTITY" >> ../logs/system.log

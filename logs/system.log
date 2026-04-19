@@ -22,3 +22,5 @@
 [ERROR] Missing input
 [INFO] Stored 52424 in 3
 [WARNING] Unknown type 'laptop' for product echo "1
+[INFO] Stored P003 in 2
+[ERROR] Unknown product type: table
