@@ -1,48 +1,50 @@
-#!/bin/bash
 source ../config/warehouse.conf
 
-PENDING_FILE="../data/pending.txt"
+PRODUCT_ID=$1
+PRODUCT_TYPE=$2
+QUANTITY=$3
+
 INVENTORY_FILE="../data/inventory.txt"
 LOG_FILE="../logs/system.log"
 
-#Checks if pending file exists
-if [ ! -f "$PENDING_FILE" ]; then
-        echo "[ERROR] Pending file not found" >> "$LOG_FILE"
-        exit 1
+# get location dynamically
+VAR_NAME="ALLOWED_LOCATIONS_${PRODUCT_TYPE}"
+LOCATION=${!VAR_NAME}
+
+# safety check
+if [ -z "$LOCATION" ]; then
+    echo "Invalid product type"
+    echo "[ERROR] No location for type: $PRODUCT_TYPE" >> "$LOG_FILE"
+    exit 1
 fi
 
-echo "Processing pending file..."
+# count current items in rack
+CURRENT_COUNT=$(grep -c ",$LOCATION$" "$INVENTORY_FILE" 2>/dev/null)
 
-while IFS=',' read -r id type quantity; do
-        #Skip empty lines
-        if [ -z "$id" ]; then
-                continue
-        fi
+# calculate available space
+AVAILABLE=$((MAX_ITEMS_PER_LOCATION - CURRENT_COUNT))
 
-        #Checks if type exists
-        if [ -z "$type" ]; then
-                echo "[ERROR] No type for product: $id" >> "$LOG_FILE"
-                continue
-        fi
+# rack full
+if [ "$AVAILABLE" -le 0 ]; then
+    echo "Rack $LOCATION is full"
+    echo "[ERROR] $LOCATION is full" >> "$LOG_FILE"
+    exit 1
+fi
 
-        #Gets the location from conf based on product type
-        VAR_NAME="ALLOWED_LOCATIONS_${type}"
-        LOCATION=${!VAR_NAME}
+# partial insert if needed
+if [ "$QUANTITY" -gt "$AVAILABLE" ]; then
+    echo "Only $AVAILABLE items can be stored in $LOCATION"
+    echo "[WARNING] Partial insert for $PRODUCT_ID: requested $QUANTITY, stored $AVAILABLE" >> "$LOG_FILE"
+    QUANTITY=$AVAILABLE
+fi
 
-        #Checks if location was found
-        if [ -z "$LOCATION" ]; then
-                echo "[WARNING] Unknown type '$type' for product $id" >> "$LOG_FILE"
-                continue
-        fi
+# insert items (one per line)
+for ((i=1; i<=QUANTITY; i++)); do
+    echo "$PRODUCT_ID,$PRODUCT_TYPE,$LOCATION" >> "$INVENTORY_FILE"
+done
 
-        #Adds product to inventory
-        echo "$id,$type,$quantity,$LOCATION" >> "$INVENTORY_FILE"
+# log success
+echo "[INFO] Stored $PRODUCT_ID ($PRODUCT_TYPE) x$QUANTITY in $LOCATION" >> "$LOG_FILE"
 
-        #Removes product from pending
-        sed -i "/^$id,/d" "$PENDING_FILE"
-
-        echo "[INFO] Assigned $id ($type) to $LOCATION" >> "$LOG_FILE"
-
-done < "$PENDING_FILE"
-
-echo "Done processing inventory"
+# user message
+echo "Stored $QUANTITY items in $LOCATION"

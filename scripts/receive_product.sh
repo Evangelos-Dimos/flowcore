@@ -1,33 +1,38 @@
 source ../config/warehouse.conf
 
-PRODUCT_ID=$1   #1st argument id product
-PRODUCT_TYPE=$2 #2nd argument product type
-QUANTITY=$3     #3rd argument quantity
+PRODUCT_ID=$1
+PRODUCT_TYPE=$2
+QUANTITY=$3
 
-#Checks if there are all the arguments
+LOG_FILE="../logs/system.log"
+
+# check arguments
 if [ -z "$PRODUCT_ID" ] || [ -z "$PRODUCT_TYPE" ] || [ -z "$QUANTITY" ]; then
-        echo "[ERROR] Missing input" >> ../logs/system.log 
-        echo "Arguments missing - Usage: ./receive_product.sh <id> <type> <quantity>" 
-        exit 1 
+    echo "Usage: ./receive_product.sh <id> <type> <quantity>"
+    echo "[ERROR] Missing input" >> "$LOG_FILE"
+    exit 1
 fi
 
-#Checks if type of product is valid
+# check quantity is number
+if ! [[ "$QUANTITY" =~ ^[0-9]+$ ]]; then
+    echo "Quantity must be a number"
+    echo "[ERROR] Invalid quantity: $QUANTITY" >> "$LOG_FILE"
+    exit 1
+fi
+
+# check product type
 VALID=0
-for type in $VALID_TYPES;
-    do
-        if [ "$PRODUCT_TYPE" = "$type" ]; then
-                VALID=1
-        fi
-    done
+for type in $VALID_TYPES; do
+    if [ "$PRODUCT_TYPE" = "$type" ]; then
+        VALID=1
+    fi
+done
 
 if [ "$VALID" -eq 0 ]; then
-        echo "[ERROR] Unknown product type: $PRODUCT_TYPE" >> ../logs/system.log
-        echo "Invalid product type. Valid types: $VALID_TYPES"
-        exit 1
+    echo "Invalid product type. Valid: $VALID_TYPES"
+    echo "[ERROR] Unknown product type: $PRODUCT_TYPE" >> "$LOG_FILE"
+    exit 1
 fi
 
-#Sending the product to pending 
-echo "$PRODUCT_ID,$PRODUCT_TYPE,$QUANTITY" >> ../data/pending.txt  
-
-#Adds the message to log
-echo "[INFO] Stored $PRODUCT_ID in $QUANTITY" >> ../logs/system.log
+# call assign automatically
+./assign_location.sh "$PRODUCT_ID" "$PRODUCT_TYPE" "$QUANTITY"
