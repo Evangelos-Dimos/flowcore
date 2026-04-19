@@ -47,3 +47,4 @@
 [INFO] Stored 678 (smartphone) x8 in RACK_C
 [WARNING] Partial insert for 678dddd: requested 4, stored 2
 [INFO] Stored 678dddd (smartphone) x2 in RACK_C
+[ERROR] RACK_A is full
