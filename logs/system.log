@@ -34,7 +34,16 @@
 [INFO] Stored 001 in 12
 [INFO] Assigned 006 (laptop) to RACK_A
 [INFO] Assigned 001 (laptop) to RACK_A
-[INFO] Inventory check completed. Total items: 3
-[INFO] Inventory check completed. Total items: 3
-[INFO] Inventory check completed. Total items: 3
-[INFO] Inventory check completed. Total items: 3
+[ERROR] Missing input
+[INFO] Stored 333 in 2
+[INFO] Stored 667 (laptop) x2 in RACK_A
+[INFO] Inventory reset
+[INFO] Stored 43536 (laptop) x7 in RACK_A
+[WARNING] Partial insert for 678: requested 5, stored 3
+[INFO] Stored 678 (laptop) x3 in RACK_A
+[INFO] Stored 678 (tablet) x5 in RACK_B
+[WARNING] Partial insert for 678: requested 8, stored 5
+[INFO] Stored 678 (tablet) x5 in RACK_B
+[INFO] Stored 678 (smartphone) x8 in RACK_C
+[WARNING] Partial insert for 678dddd: requested 4, stored 2
+[INFO] Stored 678dddd (smartphone) x2 in RACK_C
