@@ -1,42 +1,48 @@
 #!/bin/bash
-
 source ../config/warehouse.conf
+
 PENDING_FILE="../data/pending.txt"
 INVENTORY_FILE="../data/inventory.txt"
 LOG_FILE="../logs/system.log"
 
-# Έλεγχος αν υπάρχει το αρχείο
+#Checks if pending file exists
 if [ ! -f "$PENDING_FILE" ]; then
-    echo "[ERROR] Pending file not found" >> "$LOG_FILE"
-    exit 1
+        echo "[ERROR] Pending file not found" >> "$LOG_FILE"
+        exit 1
 fi
 
 echo "Processing pending file..."
 
-# Διάβασε το αρχείο γραμμή-γραμμή
 while IFS=',' read -r id type quantity; do
-    # Παράβλεψε κενές γραμμές
-    if [ -z "$id" ]; then
-        continue
-    fi
-    
-    # Έλεγχος αν υπάρχει τύπος
-    if [ -z "$type" ]; then
-        echo "[ERROR] No type for product: $id" >> "$LOG_FILE"
-        continue
-    fi
-    
-    # Εκχώρηση location βάσει τύπου
-    if [ "$type" = "Laptop" ]; then
-        echo "$id,$type,$quantity,RACK_A">>"$INVENTORY_FILE"
-    elif [ "$type" = "Tablet" ]; then
-        echo "$id,$type,$quantity,RACK_B">>"$INVENTORY_FILE"
-    elif [ "$type" = "Smartphone" ]; then
-        echo "$id,$type,$quantity,RACK_C">>"$INVENTORY_FILE"
-    else
-        echo "[WARNING] Unknown type '$type' for product $id" >> "$LOG_FILE"
-    fi
-    
+        #Skip empty lines
+        if [ -z "$id" ]; then
+                continue
+        fi
+
+        #Checks if type exists
+        if [ -z "$type" ]; then
+                echo "[ERROR] No type for product: $id" >> "$LOG_FILE"
+                continue
+        fi
+
+        #Gets the location from conf based on product type
+        VAR_NAME="ALLOWED_LOCATIONS_${type}"
+        LOCATION=${!VAR_NAME}
+
+        #Checks if location was found
+        if [ -z "$LOCATION" ]; then
+                echo "[WARNING] Unknown type '$type' for product $id" >> "$LOG_FILE"
+                continue
+        fi
+
+        #Adds product to inventory
+        echo "$id,$type,$quantity,$LOCATION" >> "$INVENTORY_FILE"
+
+        #Removes product from pending
+        sed -i "/^$id,/d" "$PENDING_FILE"
+
+        echo "[INFO] Assigned $id ($type) to $LOCATION" >> "$LOG_FILE"
+
 done < "$PENDING_FILE"
 
 echo "Done processing inventory"

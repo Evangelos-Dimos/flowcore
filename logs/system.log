@@ -24,3 +24,13 @@
 [WARNING] Unknown type 'laptop' for product echo "1
 [INFO] Stored P003 in 2
 [ERROR] Unknown product type: table
+[WARNING] Unknown type 'tablet' for product P003
+[INFO] Stored 2 in 32
+[WARNING] Unknown type 'tablet' for product P003
+[WARNING] Unknown type 'smartphone' for product 2
+[INFO] Stored 003 in 32
+[INFO] Assigned 003 (smartphone) to RACK_C
+[INFO] Stored 006 in 2
+[INFO] Stored 001 in 12
+[INFO] Assigned 006 (laptop) to RACK_A
+[INFO] Assigned 001 (laptop) to RACK_A

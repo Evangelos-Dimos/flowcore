@@ -1,2 +1,0 @@
-1,Laptop,4
-P003,tablet,2
