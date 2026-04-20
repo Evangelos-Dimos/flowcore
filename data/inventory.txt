@@ -1,11 +1,4 @@
 product_id,product_type,location
-43536,laptop,RACK_A
-43536,laptop,RACK_A
-43536,laptop,RACK_A
-43536,laptop,RACK_A
-43536,laptop,RACK_A
-43536,laptop,RACK_A
-43536,laptop,RACK_A
 678,laptop,RACK_A
 678,laptop,RACK_A
 678,laptop,RACK_A
