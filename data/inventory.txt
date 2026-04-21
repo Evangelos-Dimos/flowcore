@@ -22,3 +22,10 @@ product_id,product_type,location
 678,smartphone,RACK_C
 678dddd,smartphone,RACK_C
 678dddd,smartphone,RACK_C
+p293,laptop,RACK_A
+p293,laptop,RACK_A
+p293,laptop,RACK_A
+p293,laptop,RACK_A
+p293,laptop,RACK_A
+p293,laptop,RACK_A
+p293,laptop,RACK_A

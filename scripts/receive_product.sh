@@ -34,5 +34,12 @@ if [ "$VALID" -eq 0 ]; then
     exit 1
 fi
 
+docker exec -i oracle23ai sqlplus -s system/my_strong_password@FREEPDB1 << EOF
+INSERT INTO products (product_id, product_type, quantity) 
+VALUES ('$PRODUCT_ID', '$PRODUCT_TYPE', $QUANTITY);
+COMMIT;
+EXIT;
+EOF
+
 # call assign automatically
 ./assign_location.sh "$PRODUCT_ID" "$PRODUCT_TYPE" "$QUANTITY"

@@ -49,3 +49,6 @@
 [INFO] Stored 678dddd (smartphone) x2 in RACK_C
 [ERROR] RACK_A is full
 [INFO] Product 43536 removed from inventory (stock: 0)
+[INFO] Stored p293 (laptop) x5 in RACK_A
+[WARNING] Partial insert for p293: requested 5, stored 2
+[INFO] Stored p293 (laptop) x2 in RACK_A
