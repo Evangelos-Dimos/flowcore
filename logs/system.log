@@ -1,54 +1,15 @@
-[INFO] Stored P1 in RACK_A
-[ERROR] laptop must be stored in RACK_A, not RACK_B
-[INFO] Stored o2 in RACK_A
-[ERROR] RACK_A is full
-[ERROR] RACK_A is full
-[INFO] Stored 767517 in RACK_A
-[INFO] Stored rx8 in RACK_A
-[INFO] Stored hgy3 in RACK_A
-[ERROR] RACK_A is full
-[INFO] Inventory reset
-[INFO] Stored 55555 in RACK_A
-[INFO] Stored 864735 in RACK_A
-[INFO] Stored hgugg in RACK_A
-[ERROR] laptop must be stored in RACK_A, not RACK_B
-[INFO] Stored hgugg in RACK_A
-[INFO] Stored hgugg in RACK_A
-[ERROR] RACK_A is full
-[INFO] Inventory reset
-[ERROR] tablet must be stored in RACK_B, not RACK_A
-[ERROR] tablet must be stored in RACK_B, not RACK_C
-[INFO] Stored logitec in RACK_B
-[ERROR] Missing input
-[INFO] Stored 52424 in 3
-[WARNING] Unknown type 'laptop' for product echo "1
-[INFO] Stored P003 in 2
-[ERROR] Unknown product type: table
-[WARNING] Unknown type 'tablet' for product P003
-[INFO] Stored 2 in 32
-[WARNING] Unknown type 'tablet' for product P003
-[WARNING] Unknown type 'smartphone' for product 2
-[INFO] Stored 003 in 32
-[INFO] Assigned 003 (smartphone) to RACK_C
-[INFO] Stored 006 in 2
-[INFO] Stored 001 in 12
-[INFO] Assigned 006 (laptop) to RACK_A
-[INFO] Assigned 001 (laptop) to RACK_A
-[ERROR] Missing input
-[INFO] Stored 333 in 2
-[INFO] Stored 667 (laptop) x2 in RACK_A
-[INFO] Inventory reset
-[INFO] Stored 43536 (laptop) x7 in RACK_A
-[WARNING] Partial insert for 678: requested 5, stored 3
-[INFO] Stored 678 (laptop) x3 in RACK_A
-[INFO] Stored 678 (tablet) x5 in RACK_B
-[WARNING] Partial insert for 678: requested 8, stored 5
-[INFO] Stored 678 (tablet) x5 in RACK_B
-[INFO] Stored 678 (smartphone) x8 in RACK_C
-[WARNING] Partial insert for 678dddd: requested 4, stored 2
-[INFO] Stored 678dddd (smartphone) x2 in RACK_C
-[ERROR] RACK_A is full
-[INFO] Product 43536 removed from inventory (stock: 0)
-[INFO] Stored p293 (laptop) x5 in RACK_A
-[WARNING] Partial insert for p293: requested 5, stored 2
-[INFO] Stored p293 (laptop) x2 in RACK_A
+[INFO] Received  (Samsung A16) type:smartphone qty:4
+[INFO] Stored  (smartphone) x4 in RACK_C
+[INFO] Received PL6377 (Samsung A16) type:smartphone qty:4
+[INFO] Stored PL6377 (smartphone) x4 in RACK_C
+[ERROR] Not enough space in RACK_C - rejected
+[INFO] Updated PL6377 (Samsung A16) qty+6
+[INFO] Stored PL6377 (smartphone) x6 in RACK_C
+[INFO] Received PL7526 (Samsung A16) type:smartphone qty:6
+[INFO] Stored PL7526 (smartphone) x6 in RACK_C
+[INFO] Received PL2237 (Samsung Μ52) type:smartphone qty:3
+[INFO] Stored PL2237 (smartphone) x3 in RACK_C
+[INFO] Received PL2718 (Lenovo Ultra) type:tablet qty:3
+[INFO] Stored PL2718 (tablet) x3 in RACK_B
+[INFO] Received PL1552 (Asus Tuf Gaming) type:laptop qty:3
+[INFO] Stored PL1552 (laptop) x3 in RACK_A

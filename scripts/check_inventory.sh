@@ -1,19 +1,20 @@
-INVENTORY_FILE="../data/inventory.txt"
-LOG_FILE="../logs/system.log"
+docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEDB1 <<EOF
 
-# file exists?
-if [ ! -f "$INVENTORY_FILE" ]; then
-    echo "Inventory file not found"
-    echo "[ERROR] Inventory file missing" >> "$LOG_FILE"
-    exit 1
-fi
+ 
 
-# empty?
-if [ ! -s "$INVENTORY_FILE" ]; then
-    echo "Inventory is empty"
-    exit 0
-fi
+SET LINESIZE 200
+SET PAGESIZE 50
 
-echo "------ INVENTORY ------"
-cat "$INVENTORY_FILE"
-echo "-----------------------"
+ 
+
+SELECT i.product_id,
+       i.product_type,
+       i.quantity_number,
+       l.rack
+FROM inventory i
+JOIN locations l ON i.location_id = l.location_id;
+
+ 
+
+EXIT;
+EOF
