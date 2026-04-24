@@ -13,3 +13,28 @@
 [INFO] Stored PL2718 (tablet) x3 in RACK_B
 [INFO] Received PL1552 (Asus Tuf Gaming) type:laptop qty:3
 [INFO] Stored PL1552 (laptop) x3 in RACK_A
+[ERROR] Missing input
+[INFO] Received  (hfgyg) type:laptop qty:3
+[INFO] Stored  (laptop) x3 in RACK_A
+[INFO] Received  (ddddddddddd) type:laptop qty:3
+[INFO] Stored  (laptop) x3 in RACK_A
+[INFO] Received PL4731 (hgsyb) type:laptop qty:3
+[INFO] Stored PL4731 (laptop) x3 in RACK_A
+[INFO] Received PL7538 (hgsyb) type:laptop qty:3
+[INFO] Stored PL7538 (laptop) x3 in RACK_A
+[INFO] Received PL8393 (apple loco) type:laptop qty:3
+[INFO] Stored PL8393 (laptop) x3 in RACK_A
+[INFO] Created order INSERTINTOorders(customer_id,status,ordered_at)*ERRORatline1:ORA-00942:tableorview"SYSTEM"."ORDERS"doesnotexistHelp:https://docs.oracle.com/error-help/db/ora-00942/SELECTMAX(order_id)FROMorders*ERRORatline1:ORA-00942:tableorview"SYSTEM"."ORDERS"doesnotexistHelp:https://docs.oracle.com/error-help/db/ora-00942/ for product P001 (qty:5)
+[INFO] Updated P001 (Dell XPS 13) qty+5
+[INFO] Stored P001 (laptop) x5 in RACK_A
+[INFO] Created order 9 for product P001 (qty:3)
+[INFO] Order 9 processed successfully
+[INFO] Created order 21 for product P001 (qty:3)
+[ERROR] Order 21 failed - insufficient stock
+[ERROR] Missing input
+[INFO] Received PL3854 (samsung) type:tablet qty:7
+[INFO] Stored PL3854 (tablet) x7 in RACK_B
+[ERROR] Missing input for order creation
+[ERROR] Customer 44 does not exist
+[INFO] Created order 22 for product PL3854 (qty:4)
+[INFO] Order 22 processed successfully

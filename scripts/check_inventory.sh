@@ -1,20 +1,35 @@
-docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEDB1 <<EOF
+LOG_FILE="../logs/system.log"
 
- 
+echo "------ INVENTORY ------"
 
-SET LINESIZE 200
+docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+
+SET LINESIZE 150
 SET PAGESIZE 50
+SET FEEDBACK OFF
+SET HEADING ON
 
- 
+COLUMN product_name FORMAT A25
+COLUMN product_type FORMAT A15
+COLUMN location_id FORMAT A15
+COLUMN quantity FORMAT 9999
 
-SELECT i.product_id,
-       i.product_type,
-       i.quantity_number,
-       l.rack
+SELECT
+    p.name AS product_name,
+    i.product_type,
+    i.location_id,
+    i.quantity_number AS quantity
 FROM inventory i
-JOIN locations l ON i.location_id = l.location_id;
-
- 
+JOIN products p ON i.product_id = p.product_id
+ORDER BY i.location_id;
 
 EXIT;
 EOF
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to fetch inventory" >> "$LOG_FILE"
+    echo "Error retrieving inventory"
+    exit 1
+fi
+
+echo "-----------------------"

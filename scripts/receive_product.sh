@@ -39,7 +39,7 @@ VAR_NAME="ALLOWED_LOCATIONS_${PRODUCT_TYPE}"
 LOCATION=${!VAR_NAME}
 
 # check available space in rack BEFORE doing anything
-CURRENT_COUNT=$(docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEPDB1 << EOF
+CURRENT_COUNT=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT NVL(SUM(quantity_number), 0) FROM inventory WHERE location_id = '$LOCATION';
 EXIT;
@@ -70,7 +70,7 @@ if [ "$QUANTITY" -gt "$AVAILABLE" ]; then
 fi
 
 # check if product already exists
-EXISTING_ID=$(docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEPDB1 << EOF
+EXISTING_ID=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT product_id FROM products
 WHERE name = '$NAME' AND product_type = '$PRODUCT_TYPE'
@@ -83,7 +83,7 @@ EXISTING_ID=$(echo "$EXISTING_ID" | tr -d '[:space:]')
 
 if [ -n "$EXISTING_ID" ]; then
     # product exists - update quantity
-    docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEPDB1 << EOF
+    docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
 UPDATE products SET quantity = quantity + $QUANTITY
 WHERE product_id = '$EXISTING_ID';
 COMMIT;
@@ -94,7 +94,7 @@ EOF
     ./assign_location.sh "$EXISTING_ID" "$PRODUCT_TYPE" "$QUANTITY"
 else
     # generate new product_id
-    PRODUCT_ID=$(docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEPDB1 << EOF
+    PRODUCT_ID=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT 'PL' || LPAD(FLOOR(DBMS_RANDOM.VALUE(1000, 9999)), 4, '0') FROM dual;
 EXIT;
@@ -103,7 +103,7 @@ EOF
     PRODUCT_ID=$(echo "$PRODUCT_ID" | tr -d '[:space:]')
 
     # insert new product
-    docker exec -i oracle-flowcore-db sqlplus -s system/flowcore123@FREEPDB1 << EOF
+    docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
 INSERT INTO products (product_id, name, product_type, quantity, receive_date)
 VALUES ('$PRODUCT_ID', '$NAME', '$PRODUCT_TYPE', $QUANTITY, SYSDATE);
 COMMIT;
