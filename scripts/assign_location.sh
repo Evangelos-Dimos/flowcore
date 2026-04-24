@@ -1,5 +1,7 @@
 #!/bin/bash
+
 source ../config/warehouse.conf
+source ../config/db.conf
 
 PRODUCT_ID=$1
 PRODUCT_TYPE=$2
@@ -18,7 +20,7 @@ if [ -z "$LOCATION" ]; then
 fi
 
 # create location if not exists
-docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 BEGIN
     INSERT INTO locations (location_id, max_capacity, current_count)
     SELECT '$LOCATION', $MAX_ITEMS_PER_LOCATION, 0
@@ -32,8 +34,8 @@ END;
 EXIT;
 EOF
 
-# get current count directly from inventory
-CURRENT_COUNT=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+# get current count
+CURRENT_COUNT=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT NVL(SUM(quantity_number), 0) FROM inventory WHERE location_id = '$LOCATION';
 EXIT;
@@ -41,30 +43,24 @@ EOF
 )
 
 CURRENT_COUNT=$(echo "$CURRENT_COUNT" | tr -d '[:space:]')
+[ -z "$CURRENT_COUNT" ] && CURRENT_COUNT=0
 
-if [ -z "$CURRENT_COUNT" ] || [ "$CURRENT_COUNT" = "" ]; then
-    CURRENT_COUNT=0
-fi
-
-# calculate available space
 AVAILABLE=$((MAX_ITEMS_PER_LOCATION - CURRENT_COUNT))
 
-# rack full
 if [ "$AVAILABLE" -le 0 ]; then
     echo "Rack $LOCATION is full"
     echo "[ERROR] $LOCATION is full" >> "$LOG_FILE"
     exit 1
 fi
 
-# partial insert if needed
 if [ "$QUANTITY" -gt "$AVAILABLE" ]; then
     echo "Only $AVAILABLE items can be stored in $LOCATION"
     echo "[WARNING] Partial insert for $PRODUCT_ID: requested $QUANTITY, stored $AVAILABLE" >> "$LOG_FILE"
     QUANTITY=$AVAILABLE
 fi
 
-# check if product already exists in inventory
-EXISTING_INV=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+# check if exists
+EXISTING_INV=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT NVL(quantity_number, 0) FROM inventory
 WHERE product_id = '$PRODUCT_ID' AND location_id = '$LOCATION';
@@ -75,26 +71,28 @@ EOF
 EXISTING_INV=$(echo "$EXISTING_INV" | tr -d '[:space:]')
 
 if [ -n "$EXISTING_INV" ] && [ "$EXISTING_INV" != "0" ]; then
-    # product exists in inventory, update quantity
-    docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+
+    docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 UPDATE inventory
 SET quantity_number = quantity_number + $QUANTITY
 WHERE product_id = '$PRODUCT_ID' AND location_id = '$LOCATION';
 COMMIT;
 EXIT;
 EOF
+
 else
-    # new entry in inventory
-    docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+
+    docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 INSERT INTO inventory (product_id, product_type, location_id, quantity_number)
 VALUES ('$PRODUCT_ID', '$PRODUCT_TYPE', '$LOCATION', $QUANTITY);
 COMMIT;
 EXIT;
 EOF
+
 fi
 
-# sync current_count from inventory
-docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+# sync current_count
+docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 UPDATE locations
 SET current_count = (
     SELECT NVL(SUM(quantity_number), 0)

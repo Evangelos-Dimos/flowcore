@@ -1,3 +1,7 @@
+#!/bin/bash
+
+source ../config/db.conf
+
 CUSTOMER_ID=$1
 PRODUCT_ID=$2
 QUANTITY=$3
@@ -23,7 +27,7 @@ fi
 # CHECK CUSTOMER EXISTS
 # ============================
 
-CUSTOMER_EXISTS=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+CUSTOMER_EXISTS=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT COUNT(*) FROM customers WHERE customer_id = $CUSTOMER_ID;
 EXIT;
@@ -42,7 +46,7 @@ fi
 # CHECK PRODUCT EXISTS
 # ============================
 
-PRODUCT_EXISTS=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+PRODUCT_EXISTS=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT COUNT(*) FROM products WHERE product_id = '$PRODUCT_ID';
 EXIT;
@@ -61,7 +65,7 @@ fi
 # CREATE ORDER + ITEM
 # ============================
 
-ORDER_ID=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+ORDER_ID=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 
 INSERT INTO orders (customer_id, status, ordered_at)
@@ -76,8 +80,8 @@ EOF
 
 ORDER_ID=$(echo "$ORDER_ID" | tr -d '[:space:]')
 
-# insert into order_items
-docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+# insert order item
+docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 INSERT INTO order_items (order_id, product_id, quantity)
 VALUES ($ORDER_ID, '$PRODUCT_ID', $QUANTITY);
 

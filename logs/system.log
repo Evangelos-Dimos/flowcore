@@ -38,3 +38,15 @@
 [ERROR] Customer 44 does not exist
 [INFO] Created order 22 for product PL3854 (qty:4)
 [INFO] Order 22 processed successfully
+[INFO] Received  (Lenovo Ultra) type:tablet qty:3
+[INFO] Stored  (tablet) x3 in RACK_B
+[INFO] Received  (Samsung Μ52) type:smartphone qty:3
+[INFO] Stored  (smartphone) x3 in RACK_C
+[ERROR] Not enough space in RACK_C - rejected
+[INFO] Received PL2530 (Samsung Ultra) type:laptop qty:3
+[INFO] Stored PL2530 (laptop) x3 in RACK_A
+[INFO] Updated PL2530 (Samsung Ultra) qty+1
+[INFO] Stored PL2530 (laptop) x1 in RACK_A
+[INFO] Received PL5379 (Samsung Ultra) type:laptop qty:4
+[INFO] Stored PL5379 (laptop) x4 in RACK_A
+[ERROR] Missing input for order creation

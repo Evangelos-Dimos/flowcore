@@ -1,3 +1,7 @@
+#!/bin/bash
+
+source ../config/db.conf
+
 ORDER_ID=$1
 LOG_FILE="../logs/system.log"
 
@@ -11,7 +15,7 @@ fi
 # CHECK ORDER EXISTS
 # ============================
 
-ORDER_EXISTS=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+ORDER_EXISTS=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT COUNT(*) FROM orders WHERE order_id = $ORDER_ID;
 EXIT;
@@ -30,7 +34,7 @@ fi
 # GET ORDER ITEM
 # ============================
 
-read PRODUCT_ID QUANTITY <<< $(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+read PRODUCT_ID QUANTITY <<< $(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT product_id, quantity FROM order_items WHERE order_id = $ORDER_ID;
 EXIT;
@@ -44,7 +48,7 @@ QUANTITY=$(echo "$QUANTITY" | tr -d '[:space:]')
 # CHECK TOTAL STOCK
 # ============================
 
-TOTAL_STOCK=$(docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+TOTAL_STOCK=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0
 SELECT NVL(SUM(quantity_number),0) FROM inventory WHERE product_id = '$PRODUCT_ID';
 EXIT;
@@ -60,10 +64,10 @@ if [ "$TOTAL_STOCK" -lt "$QUANTITY" ]; then
 fi
 
 # ============================
-# REDUCE INVENTORY (simple version: one location)
+# REDUCE INVENTORY
 # ============================
 
-docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 UPDATE inventory
 SET quantity_number = quantity_number - $QUANTITY
 WHERE product_id = '$PRODUCT_ID';
@@ -76,7 +80,7 @@ EOF
 # UPDATE ORDER STATUS
 # ============================
 
-docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 UPDATE orders
 SET status = 'SHIPPED'
 WHERE order_id = $ORDER_ID;

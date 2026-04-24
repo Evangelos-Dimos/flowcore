@@ -1,8 +1,12 @@
+#!/bin/bash
+
+source ../config/db.conf
+
 LOG_FILE="../logs/system.log"
 
 echo "------ INVENTORY ------"
 
-docker exec -i oracle-db sqlplus -s system/flowcore123@//localhost:1521/FREEPDB1 <<EOF
+docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
 
 SET LINESIZE 150
 SET PAGESIZE 50
@@ -26,6 +30,7 @@ ORDER BY i.location_id;
 EXIT;
 EOF
 
+# check if command failed
 if [ $? -ne 0 ]; then
     echo "[ERROR] Failed to fetch inventory" >> "$LOG_FILE"
     echo "Error retrieving inventory"
