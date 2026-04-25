@@ -52,19 +52,30 @@ while IFS= read -r line; do
     if [ -n "$line" ]; then
         PROD_ID=$(echo "$line" | awk '{print $1}')
         REQ_QTY=$(echo "$line" | awk '{print $2}')
-        
-        # get available quantity
+        # get available quantity from products
         AVAIL_QTY=$(call_database "SELECT quantity FROM products WHERE product_id = '$PROD_ID';")
         AVAIL_QTY=$(echo "$AVAIL_QTY" | tr -d '[:space:]')
-        
+
         if [ -z "$AVAIL_QTY" ] || [ "$AVAIL_QTY" -lt "$REQ_QTY" ]; then
             echo "Insufficient stock for product $PROD_ID (available: $AVAIL_QTY, requested: $REQ_QTY)"
             echo "[ERROR] Insufficient stock for product $PROD_ID" >> "$LOG_FILE"
             PROCESS_SUCCESS=0
         else
-            # update inventory
+            # 1. Update products table
             call_database "UPDATE products SET quantity = quantity - $REQ_QTY WHERE product_id = '$PROD_ID';"
-            echo "[INFO] Reserved $REQ_QTY of $PROD_ID" >> "$LOG_FILE"
+
+            # 2. Get location_id from inventory
+            LOCATION=$(call_database "SELECT location_id FROM inventory WHERE product_id = '$PROD_ID' AND ROWNUM = 1;")
+            LOCATION=$(echo "$LOCATION" | tr -d '[:space:]')
+
+            # 3. Update inventory table
+            if [ -n "$LOCATION" ]; then
+                call_database "UPDATE inventory SET quantity_number = quantity_number - $REQ_QTY WHERE product_id = '$PROD_ID' AND location_id = '$LOCATION';"
+                # 4. Update locations current_count
+                call_database "UPDATE locations SET current_count = current_count - $REQ_QTY WHERE location_id = '$LOCATION';"
+            fi
+
+            echo "[INFO] Reserved $REQ_QTY of $PROD_ID from $LOCATION" >> "$LOG_FILE"
         fi
     fi
 done <<< "$ORDER_ITEMS"
@@ -80,5 +91,5 @@ else
     echo "[ERROR] Order $ORDER_ID failed - insufficient stock" >> "$LOG_FILE"
 fi
 
-# commit
+# commit all changes
 call_database "COMMIT;"

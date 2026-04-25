@@ -80,3 +80,15 @@
 [INFO] Processing order 1
 [INFO] Reserved 2 of PL4715
 [INFO] Order 1 completed successfully
+[INFO] Received PL9075 (Asus Tuf Gaming) type:laptop qty:5
+[INFO] Stored PL9075 (laptop) x5 in RACK_A
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 3 does not exist
+[ERROR] Customer 3 does not exist
+[INFO] Created order 1 for product PL9075 (qty:2)
+[ERROR] Missing order ID
+[INFO] Processing order 1
+[INFO] Reserved 2 of PL9075 from RACK_A
+[INFO] Order 1 completed successfully
