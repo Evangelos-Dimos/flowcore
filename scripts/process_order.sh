@@ -1,98 +1,84 @@
 #!/bin/bash
 
-source ../config/db.conf
+source "$(dirname "$0")/docker.sh"
 
 ORDER_ID=$1
-LOG_FILE="../logs/system.log"
 
+# check arguments
 if [ -z "$ORDER_ID" ]; then
     echo "Usage: ./process_order.sh <order_id>"
-    echo "[ERROR] Missing order_id" >> "$LOG_FILE"
+    echo "[ERROR] Missing order ID" >> "$LOG_FILE"
     exit 1
 fi
 
-# ============================
-# CHECK ORDER EXISTS
-# ============================
-
-ORDER_EXISTS=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT COUNT(*) FROM orders WHERE order_id = $ORDER_ID;
-EXIT;
-EOF
-)
-
+# check order exists
+ORDER_EXISTS=$(call_database "SELECT COUNT(*) FROM orders WHERE order_id = $ORDER_ID;")
 ORDER_EXISTS=$(echo "$ORDER_EXISTS" | tr -d '[:space:]')
 
 if [ "$ORDER_EXISTS" -eq 0 ]; then
-    echo "Order not found"
-    echo "[ERROR] Order $ORDER_ID not found" >> "$LOG_FILE"
+    echo "Order $ORDER_ID not found"
+    echo "[ERROR] Order $ORDER_ID does not exist" >> "$LOG_FILE"
     exit 1
 fi
 
-# ============================
-# GET ORDER ITEM
-# ============================
+# check order status
+STATUS=$(call_database "SELECT status FROM orders WHERE order_id = $ORDER_ID;")
+STATUS=$(echo "$STATUS" | tr -d '[:space:]')
 
-read PRODUCT_ID QUANTITY <<< $(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+if [ "$STATUS" != "PENDING" ]; then
+    echo "Order $ORDER_ID is already $STATUS"
+    echo "[WARNING] Order $ORDER_ID already processed" >> "$LOG_FILE"
+    exit 0
+fi
+
+# get order items
+echo "Processing order $ORDER_ID..."
+echo "[INFO] Processing order $ORDER_ID" >> "$LOG_FILE"
+
+ORDER_ITEMS=$(call_database "
 SELECT product_id, quantity FROM order_items WHERE order_id = $ORDER_ID;
-EXIT;
-EOF
-)
+")
 
-PRODUCT_ID=$(echo "$PRODUCT_ID" | tr -d '[:space:]')
-QUANTITY=$(echo "$QUANTITY" | tr -d '[:space:]')
-
-# ============================
-# CHECK TOTAL STOCK
-# ============================
-
-TOTAL_STOCK=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT NVL(SUM(quantity_number),0) FROM inventory WHERE product_id = '$PRODUCT_ID';
-EXIT;
-EOF
-)
-
-TOTAL_STOCK=$(echo "$TOTAL_STOCK" | tr -d '[:space:]')
-
-if [ "$TOTAL_STOCK" -lt "$QUANTITY" ]; then
-    echo "Not enough stock to process order"
-    echo "[ERROR] Order $ORDER_ID failed - insufficient stock" >> "$LOG_FILE"
+if [ -z "$ORDER_ITEMS" ]; then
+    echo "No items found in order $ORDER_ID"
+    echo "[ERROR] Order $ORDER_ID has no items" >> "$LOG_FILE"
     exit 1
 fi
 
-# ============================
-# REDUCE INVENTORY
-# ============================
+# check availability and update
+PROCESS_SUCCESS=1
 
-docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-UPDATE inventory
-SET quantity_number = quantity_number - $QUANTITY
-WHERE product_id = '$PRODUCT_ID';
+while IFS= read -r line; do
+    if [ -n "$line" ]; then
+        PROD_ID=$(echo "$line" | awk '{print $1}')
+        REQ_QTY=$(echo "$line" | awk '{print $2}')
+        
+        # get available quantity
+        AVAIL_QTY=$(call_database "SELECT quantity FROM products WHERE product_id = '$PROD_ID';")
+        AVAIL_QTY=$(echo "$AVAIL_QTY" | tr -d '[:space:]')
+        
+        if [ -z "$AVAIL_QTY" ] || [ "$AVAIL_QTY" -lt "$REQ_QTY" ]; then
+            echo "Insufficient stock for product $PROD_ID (available: $AVAIL_QTY, requested: $REQ_QTY)"
+            echo "[ERROR] Insufficient stock for product $PROD_ID" >> "$LOG_FILE"
+            PROCESS_SUCCESS=0
+        else
+            # update inventory
+            call_database "UPDATE products SET quantity = quantity - $REQ_QTY WHERE product_id = '$PROD_ID';"
+            echo "[INFO] Reserved $REQ_QTY of $PROD_ID" >> "$LOG_FILE"
+        fi
+    fi
+done <<< "$ORDER_ITEMS"
 
-COMMIT;
-EXIT;
-EOF
+# update order status
+if [ $PROCESS_SUCCESS -eq 1 ]; then
+    call_database "UPDATE orders SET status = 'COMPLETED' WHERE order_id = $ORDER_ID;"
+    echo "Order $ORDER_ID processed successfully!"
+    echo "[INFO] Order $ORDER_ID completed successfully" >> "$LOG_FILE"
+else
+    call_database "UPDATE orders SET status = 'FAILED' WHERE order_id = $ORDER_ID;"
+    echo "Order $ORDER_ID failed due to insufficient stock"
+    echo "[ERROR] Order $ORDER_ID failed - insufficient stock" >> "$LOG_FILE"
+fi
 
-# ============================
-# UPDATE ORDER STATUS
-# ============================
-
-docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-UPDATE orders
-SET status = 'SHIPPED'
-WHERE order_id = $ORDER_ID;
-
-COMMIT;
-EXIT;
-EOF
-
-# ============================
-# SUCCESS
-# ============================
-
-echo "[INFO] Order $ORDER_ID processed successfully" >> "$LOG_FILE"
-
-echo "Order $ORDER_ID processed successfully!"
+# commit
+call_database "COMMIT;"

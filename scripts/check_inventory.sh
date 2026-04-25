@@ -1,40 +1,45 @@
 #!/bin/bash
 
-source ../config/db.conf
+source "$(dirname "$0")/docker.sh"
 
-LOG_FILE="../logs/system.log"
+echo "=========================================="
+echo "CURRENT INVENTORY"
+echo "=========================================="
+echo ""
 
-echo "------ INVENTORY ------"
+echo "--- Products ---"
+call_database "SELECT product_id, name, product_type, quantity FROM products ORDER BY product_id;"
 
-docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
+echo ""
+echo "--- Locations ---"
+call_database "SELECT location_id, max_capacity, current_count FROM locations ORDER BY location_id;"
 
-SET LINESIZE 150
-SET PAGESIZE 50
-SET FEEDBACK OFF
-SET HEADING ON
+echo ""
+echo "--- Inventory ---"
+call_database "SELECT product_id, location_id, quantity_number FROM inventory ORDER BY location_id, product_id;"
 
-COLUMN product_name FORMAT A25
-COLUMN product_type FORMAT A15
-COLUMN location_id FORMAT A15
-COLUMN quantity FORMAT 9999
+echo ""
+echo "=========================================="
+echo "SUMMARY"
+echo "=========================================="
 
-SELECT
-    p.name AS product_name,
-    i.product_type,
-    i.location_id,
-    i.quantity_number AS quantity
-FROM inventory i
-JOIN products p ON i.product_id = p.product_id
-ORDER BY i.location_id;
+# get totals
+TOTAL_ITEMS=$(call_database "SELECT SUM(quantity) FROM products;")
+TOTAL_ITEMS=$(echo "$TOTAL_ITEMS" | tr -d '[:space:]')
 
-EXIT;
-EOF
+TOTAL_OCCUPIED=$(call_database "SELECT SUM(current_count) FROM locations;")
+TOTAL_OCCUPIED=$(echo "$TOTAL_OCCUPIED" | tr -d '[:space:]')
 
-# check if command failed
-if [ $? -ne 0 ]; then
-    echo "[ERROR] Failed to fetch inventory" >> "$LOG_FILE"
-    echo "Error retrieving inventory"
-    exit 1
+TOTAL_CAPACITY=$(call_database "SELECT SUM(max_capacity) FROM locations;")
+TOTAL_CAPACITY=$(echo "$TOTAL_CAPACITY" | tr -d '[:space:]')
+
+echo "Total items in warehouse: $TOTAL_ITEMS"
+echo "Occupied space: $TOTAL_OCCUPIED"
+echo "Total capacity: $TOTAL_CAPACITY"
+
+if [ -n "$TOTAL_CAPACITY" ] && [ "$TOTAL_CAPACITY" -gt 0 ]; then
+    UTILIZATION=$(echo "scale=2; $TOTAL_OCCUPIED * 100 / $TOTAL_CAPACITY" | bc)
+    echo "Utilization: ${UTILIZATION}%"
 fi
 
-echo "-----------------------"
+echo "[INFO] Inventory report generated" >> "$LOG_FILE"

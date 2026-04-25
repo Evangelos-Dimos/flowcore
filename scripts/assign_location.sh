@@ -1,12 +1,10 @@
 #!/bin/bash
 
-source ../config/warehouse.conf
-source ../config/db.conf
+source "$(dirname "$0")/docker.sh"
 
 PRODUCT_ID=$1
 PRODUCT_TYPE=$2
 QUANTITY=$3
-LOG_FILE="../logs/system.log"
 
 # get location dynamically
 VAR_NAME="ALLOWED_LOCATIONS_${PRODUCT_TYPE}"
@@ -20,7 +18,7 @@ if [ -z "$LOCATION" ]; then
 fi
 
 # create location if not exists
-docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
+call_database "
 BEGIN
     INSERT INTO locations (location_id, max_capacity, current_count)
     SELECT '$LOCATION', $MAX_ITEMS_PER_LOCATION, 0
@@ -28,19 +26,11 @@ BEGIN
     WHERE NOT EXISTS (
         SELECT 1 FROM locations WHERE location_id = '$LOCATION'
     );
-    COMMIT;
 END;
-/
-EXIT;
-EOF
+/"
 
 # get current count
-CURRENT_COUNT=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT NVL(SUM(quantity_number), 0) FROM inventory WHERE location_id = '$LOCATION';
-EXIT;
-EOF
-)
+CURRENT_COUNT=$(call_database "SELECT NVL(SUM(quantity_number), 0) FROM inventory WHERE location_id = '$LOCATION';")
 
 CURRENT_COUNT=$(echo "$CURRENT_COUNT" | tr -d '[:space:]')
 [ -z "$CURRENT_COUNT" ] && CURRENT_COUNT=0
@@ -60,49 +50,32 @@ if [ "$QUANTITY" -gt "$AVAILABLE" ]; then
 fi
 
 # check if exists
-EXISTING_INV=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT NVL(quantity_number, 0) FROM inventory
-WHERE product_id = '$PRODUCT_ID' AND location_id = '$LOCATION';
-EXIT;
-EOF
-)
+EXISTING_INV=$(call_database "SELECT NVL(quantity_number, 0) FROM inventory WHERE product_id = '$PRODUCT_ID' AND location_id = '$LOCATION';")
 
 EXISTING_INV=$(echo "$EXISTING_INV" | tr -d '[:space:]')
 
 if [ -n "$EXISTING_INV" ] && [ "$EXISTING_INV" != "0" ]; then
 
-    docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-UPDATE inventory
-SET quantity_number = quantity_number + $QUANTITY
-WHERE product_id = '$PRODUCT_ID' AND location_id = '$LOCATION';
-COMMIT;
-EXIT;
-EOF
+    call_database "UPDATE inventory SET quantity_number = quantity_number + $QUANTITY WHERE product_id = '$PRODUCT_ID' AND location_id = '$LOCATION';"
 
 else
 
-    docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-INSERT INTO inventory (product_id, product_type, location_id, quantity_number)
-VALUES ('$PRODUCT_ID', '$PRODUCT_TYPE', '$LOCATION', $QUANTITY);
-COMMIT;
-EXIT;
-EOF
+    call_database "INSERT INTO inventory (product_id, product_type, location_id, quantity_number) VALUES ('$PRODUCT_ID', '$PRODUCT_TYPE', '$LOCATION', $QUANTITY);"
 
 fi
 
 # sync current_count
-docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
+call_database "
 UPDATE locations
 SET current_count = (
     SELECT NVL(SUM(quantity_number), 0)
     FROM inventory
     WHERE location_id = '$LOCATION'
 )
-WHERE location_id = '$LOCATION';
-COMMIT;
-EXIT;
-EOF
+WHERE location_id = '$LOCATION';"
+
+# Final commit
+call_database "COMMIT;"
 
 echo "[INFO] Stored $PRODUCT_ID ($PRODUCT_TYPE) x$QUANTITY in $LOCATION" >> "$LOG_FILE"
 echo "Stored $QUANTITY items in $LOCATION"

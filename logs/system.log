@@ -50,3 +50,33 @@
 [INFO] Received PL5379 (Samsung Ultra) type:laptop qty:4
 [INFO] Stored PL5379 (laptop) x4 in RACK_A
 [ERROR] Missing input for order creation
+[INFO] Received PL7928 (Samsung Ultra) type:laptop qty:4
+[INFO] Stored PL7928 (laptop) x4 in RACK_A
+[ERROR] Missing input for order creation
+[ERROR] Customer 34234 does not exist
+[INFO] Created order INSERTINTOorders(customer_id,status,ordered_at)*ERRORatline1:ORA-00904:"CUSTOMER_ID":invalididentifierHelp:https://docs.oracle.com/error-help/db/ora-00904/ for product PL7928 (qty:1)
+[INFO] Updated PL7928 (Samsung Ultra) qty+4
+[INFO] Stored PL7928 (laptop) x4 in RACK_A
+[INFO] Received PL3804 (Samsung Ultra) type:laptop qty:4
+[INFO] Stored PL3804 (laptop) x4 in RACK_A
+[INFO] Received PL9410 (Samsung Ultra) type:laptop qty:4
+[INFO] Stored PL9410 (laptop) x4 in RACK_A
+[ERROR] Missing input for order creation
+[INFO] Created order INSERTINTOorders(customer_id,status,ordered_at)*ERRORatline1:ORA-00904:"CUSTOMER_ID":invalididentifierHelp:https://docs.oracle.com/error-help/db/ora-00904/ for product PL9410 (qty:1)
+[INFO] Received PL6082 (Asus Tuf Gaming) type:laptop qty:3
+[INFO] Stored PL6082 (laptop) x3 in RACK_A
+[INFO] Received PL8010 (Asus Tuf Gaming) type:laptop qty:3
+[INFO] Stored PL8010 (laptop) x3 in RACK_A
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 1 does not exist
+[ERROR] Customer 2 does not exist
+[INFO] Received PL4715 (Asus Tuf Gaming) type:laptop qty:3
+[INFO] Stored PL4715 (laptop) x3 in RACK_A
+[INFO] Created order 1 for product PL4715 (qty:2)
+[ERROR] Missing order ID
+[INFO] Processing order 1
+[INFO] Reserved 2 of PL4715
+[INFO] Order 1 completed successfully

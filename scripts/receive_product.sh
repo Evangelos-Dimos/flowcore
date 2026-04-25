@@ -1,12 +1,10 @@
 #!/bin/bash
 
-source ../config/warehouse.conf
-source ../config/db.conf
+source "$(dirname "$0")/docker.sh"
 
 NAME=$1
 PRODUCT_TYPE=$2
 QUANTITY=$3
-LOG_FILE="../logs/system.log"
 
 # check arguments
 if [ -z "$NAME" ] || [ -z "$PRODUCT_TYPE" ] || [ -z "$QUANTITY" ]; then
@@ -41,12 +39,7 @@ VAR_NAME="ALLOWED_LOCATIONS_${PRODUCT_TYPE}"
 LOCATION=${!VAR_NAME}
 
 # check available space
-CURRENT_COUNT=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT NVL(SUM(quantity_number), 0) FROM inventory WHERE location_id = '$LOCATION';
-EXIT;
-EOF
-)
+CURRENT_COUNT=$(call_database "SELECT NVL(SUM(quantity_number), 0) FROM inventory WHERE location_id = '$LOCATION';")
 
 CURRENT_COUNT=$(echo "$CURRENT_COUNT" | tr -d '[:space:]')
 [ -z "$CURRENT_COUNT" ] && CURRENT_COUNT=0
@@ -67,25 +60,13 @@ if [ "$QUANTITY" -gt "$AVAILABLE" ]; then
 fi
 
 # check if product exists
-EXISTING_ID=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT product_id FROM products
-WHERE name = '$NAME' AND product_type = '$PRODUCT_TYPE'
-AND ROWNUM = 1;
-EXIT;
-EOF
-)
+EXISTING_ID=$(call_database "SELECT product_id FROM products WHERE name = '$NAME' AND product_type = '$PRODUCT_TYPE' AND ROWNUM = 1;")
 
 EXISTING_ID=$(echo "$EXISTING_ID" | tr -d '[:space:]')
 
 if [ -n "$EXISTING_ID" ]; then
 
-    docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-UPDATE products SET quantity = quantity + $QUANTITY
-WHERE product_id = '$EXISTING_ID';
-COMMIT;
-EXIT;
-EOF
+    call_database "UPDATE products SET quantity = quantity + $QUANTITY WHERE product_id = '$EXISTING_ID';"
 
     echo "[INFO] Updated $EXISTING_ID ($NAME) qty+$QUANTITY" >> "$LOG_FILE"
     echo "Product updated successfully with ID: $EXISTING_ID"
@@ -94,24 +75,17 @@ EOF
 
 else
 
-    PRODUCT_ID=$(docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-SET HEADING OFF FEEDBACK OFF PAGESIZE 0
-SELECT 'PL' || LPAD(FLOOR(DBMS_RANDOM.VALUE(1000, 9999)), 4, '0') FROM dual;
-EXIT;
-EOF
-)
+    PRODUCT_ID=$(call_database "SELECT 'PL' || LPAD(FLOOR(DBMS_RANDOM.VALUE(1000, 9999)), 4, '0') FROM dual;")
 
     PRODUCT_ID=$(echo "$PRODUCT_ID" | tr -d '[:space:]')
 
-    docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE <<EOF
-INSERT INTO products (product_id, name, product_type, quantity, receive_date)
-VALUES ('$PRODUCT_ID', '$NAME', '$PRODUCT_TYPE', $QUANTITY, SYSDATE);
-COMMIT;
-EXIT;
-EOF
+    call_database "INSERT INTO products (product_id, name, product_type, quantity, receive_date) VALUES ('$PRODUCT_ID', '$NAME', '$PRODUCT_TYPE', $QUANTITY, SYSDATE);"
 
     echo "[INFO] Received $PRODUCT_ID ($NAME) type:$PRODUCT_TYPE qty:$QUANTITY" >> "$LOG_FILE"
     echo "Product received successfully with ID: $PRODUCT_ID"
 
     ./assign_location.sh "$PRODUCT_ID" "$PRODUCT_TYPE" "$QUANTITY"
 fi
+
+# Final commit after all operations
+call_database "COMMIT;"
