@@ -92,3 +92,20 @@
 [INFO] Processing order 1
 [INFO] Reserved 2 of PL9075 from RACK_A
 [INFO] Order 1 completed successfully
+[INFO] Received PL8047 (Asus Tuf Gaming) type:laptop qty:5
+[INFO] Stored PL8047 (laptop) x5 in RACK_A
+[ERROR] Customer 4 does not exist
+[INFO] Created order 1 for product PL8047 (qty:1)
+[ERROR] Invalid quantity: Gaming
+[INFO] Received PL4754 (Asus Tuf Gaming) type:laptop qty:5
+[INFO] Stored PL4754 (laptop) x5 in RACK_A
+[INFO] Created order 1 for product PL4754 (qty:2)
+[ERROR] Missing order ID
+[INFO] Processing order 1
+[INFO] Reserved 2 of PL4754 from RACK_A
+[INFO] Order 1 completed successfully
+[INFO] Exporting inventory to CSV...
+[INFO] Export complete
+[INFO] Inventory report generated
+[INFO] Exporting inventory to CSV...
+[INFO] Export complete

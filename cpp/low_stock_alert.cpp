@@ -7,12 +7,17 @@
 
 using namespace std;
 
-vector<Product> getLowStockProducts(const string& filename, int threshold) {
+vector<Product> getLowStockProducts(const string& filename, int threshold)
+{
+
     vector<Product> lowStock;
+
     ifstream file(filename);
     string line;
     
-    while (getline(file, line)) {
+    while (getline(file, line)) 
+    {
+        
         Product p;
         string qtyStr;
         

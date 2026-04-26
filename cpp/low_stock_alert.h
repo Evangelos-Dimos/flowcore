@@ -7,7 +7,8 @@
 
 using namespace std;
 
-struct Product {
+struct Product 
+{
     string id;
     string name;
     int quantity;
