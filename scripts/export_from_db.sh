@@ -1,24 +1,27 @@
 #!/bin/bash
+# export_tables.sh
 
 source "$(dirname "$0")/docker.sh"
 
 # Create tmp directory if not exists
 mkdir -p ../tmp
 
-echo "[INFO] Exporting inventory to CSV..." >> "$LOG_FILE"
+echo "=== EXPORTING TABLES TO CSV ==="
+echo ""
 
-# Export products (product_id, name, product_type, quantity)
-call_database "SELECT product_id || ',' || name || ',' || product_type || ',' || quantity FROM products;" > ../tmp/inventory_export.csv
+# Export each table
+for table in customers products locations inventory orders order_items; do
+    echo -n "  Exporting $table... "
+    export_to_csv "$table" "../tmp/${table}_export.csv"
+    if [ -s "../tmp/${table}_export.csv" ]; then
+        lines=$(wc -l < "../tmp/${table}_export.csv")
+        echo "✓ ($lines rows)"
+    else
+        echo "✗ (empty or failed)"
+    fi
+done
 
-# Export order items (order_id, product_id, quantity)
-call_database "SELECT order_id || ',' || product_id || ',' || quantity FROM order_items;" > ../tmp/order_items_export.csv
-
-# Export locations (location_id, max_capacity, current_count)
-call_database "SELECT location_id || ',' || max_capacity || ',' || current_count FROM locations;" > ../tmp/locations_export.csv
-
-echo "[INFO] Export complete" >> "$LOG_FILE"
 echo ""
 echo "=== EXPORT COMPLETE ==="
-echo "inventory_export.csv: $(wc -l < ../tmp/inventory_export.csv) lines"
-echo "order_items_export.csv: $(wc -l < ../tmp/order_items_export.csv) lines"
-echo "locations_export.csv: $(wc -l < ../tmp/locations_export.csv) lines"
+echo "Files saved in ../tmp/"
+ls -lh ../tmp/*_export.csv 2>/dev/null
