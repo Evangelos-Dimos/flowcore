@@ -5,15 +5,11 @@ source ../config/warehouse.conf
 source ../config/db.conf
 source ./docker.sh
 
-# Δημιουργία comma-separated list
+# 1. Sync product types
 TYPE_LIST=$(echo $VALID_TYPES | tr ' ' ',')
-
-
 echo "🔄 Syncing product types to database..."
-echo "   Types: $VALID_TYPES"
 
 docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE << EOF
-SET SERVEROUTPUT ON
 BEGIN
     sync_product_types('$TYPE_LIST');
 END;
@@ -21,13 +17,7 @@ END;
 EXIT;
 EOF
 
-if [ $? -eq 0 ]; then
-    echo "✅ Database sync completed successfully!"
-else
-    echo "❌ Database sync failed!"
-    exit 1
-fi
-
+# 2. Sync location mappings with MAX_ITEMS_PER_LOCATION
 MAPPINGS=""
 for var in $(set | grep -E '^ALLOWED_LOCATIONS_' | cut -d'=' -f1); do
     product_type=$(echo $var | sed 's/ALLOWED_LOCATIONS_//' | tr '[:upper:]' '[:lower:]')
@@ -36,10 +26,14 @@ for var in $(set | grep -E '^ALLOWED_LOCATIONS_' | cut -d'=' -f1); do
 done
 MAPPINGS=${MAPPINGS%,}
 
+echo "🔄 Syncing location config (max capacity: $MAX_ITEMS_PER_LOCATION)..."
+
 docker exec -i $DB_CONTAINER sqlplus -s $DB_USER/$DB_PASSWORD@$DB_SERVICE << EOF
 BEGIN
-    sync_location_config('$MAPPINGS');
+    sync_location_config('$MAPPINGS', $MAX_ITEMS_PER_LOCATION);
 END;
 /
 EXIT;
 EOF
+
+echo "✅ Full config synced successfully!"

@@ -1,8 +1,9 @@
+-- Σωστή σειρά (από τα πιο εξαρτημένα)
 DROP TABLE order_items;
-DROP TABLE orders;   
-DROP TABLE inventory;     
-DROP TABLE locations;     
-DROP TABLE customers;  
+DROP TABLE orders;
+DROP TABLE inventory;
+DROP TABLE locations;
+DROP TABLE customers;
 DROP TABLE products;
 DROP TABLE valid_location_mappings;
 DROP TABLE valid_product_types;
@@ -68,17 +69,6 @@ create table order_items (
     foreign key (order_id) references orders(order_id)
 );
 
-INSERT INTO locations (location_id, max_capacity, current_count)
-VALUES ('RACK_A', 10, 0);
- 
-INSERT INTO locations (location_id, max_capacity, current_count)
-VALUES ('RACK_B', 10, 0);
- 
-INSERT INTO locations (location_id, max_capacity, current_count)
-VALUES ('RACK_C', 10, 0);
- 
-COMMIT;
-
 INSERT INTO customers (customer_fname, customer_lname, address)
 VALUES ('John', 'Doe', 'Athens');
  
@@ -127,16 +117,17 @@ CREATE OR REPLACE PROCEDURE process_order_proc (
         WHERE order_id = p_order_id;
 
     v_stock NUMBER;
+    v_location_id locations.location_id%TYPE;
     v_success NUMBER := 1;
 
 BEGIN
 
-    -- loop through order items
+    -- First pass: check stock and get location for each product
     FOR rec IN order_cursor LOOP
 
-        -- check stock
-        SELECT NVL(SUM(quantity_number), 0)
-        INTO v_stock
+        -- Check stock and get location_id
+        SELECT NVL(SUM(quantity_number), 0), MAX(location_id)
+        INTO v_stock, v_location_id
         FROM inventory
         WHERE product_id = rec.product_id;
 
@@ -147,7 +138,7 @@ BEGIN
 
     END LOOP;
 
-    -- if any failed → mark order failed
+    -- If any failed → mark order failed
     IF v_success = 0 THEN
         UPDATE orders
         SET status = 'FAILED'
@@ -157,15 +148,27 @@ BEGIN
         RETURN;
     END IF;
 
-    -- otherwise process order
+    -- Process order: update inventory and locations
     FOR rec IN order_cursor LOOP
 
+        -- Update inventory
         UPDATE inventory
         SET quantity_number = quantity_number - rec.quantity
         WHERE product_id = rec.product_id;
 
+        -- Update locations current_count
+        UPDATE locations l
+        SET current_count = current_count - rec.quantity
+        WHERE l.location_id = (
+            SELECT location_id 
+            FROM inventory 
+            WHERE product_id = rec.product_id 
+            AND ROWNUM = 1
+        );
+
     END LOOP;
 
+    -- Mark order as SHIPPED
     UPDATE orders
     SET status = 'SHIPPED'
     WHERE order_id = p_order_id;
@@ -178,6 +181,7 @@ EXCEPTION
     WHEN NO_DATA_FOUND THEN
         DBMS_OUTPUT.PUT_LINE('Order not found');
     WHEN OTHERS THEN
+        ROLLBACK;
         DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
 END;
 /
@@ -185,19 +189,21 @@ END;
 
 CREATE OR REPLACE TRIGGER update_location_count
 AFTER INSERT OR UPDATE OR DELETE ON inventory
-DECLARE
-    v_location_id locations.location_id%TYPE;
+FOR EACH ROW
 BEGIN
-    -- Βρες όλα τα distinct location_id που άλλαξαν
-    FOR rec IN (SELECT DISTINCT location_id FROM inventory) LOOP
+    -- Αν έγινε INSERT ή UPDATE, ενημέρωσε το location της γραμμής
+    IF INSERTING OR UPDATING THEN
         UPDATE locations
-        SET current_count = (
-            SELECT NVL(SUM(quantity_number), 0)
-            FROM inventory
-            WHERE location_id = rec.location_id
-        )
-        WHERE location_id = rec.location_id;
-    END LOOP;
+        SET current_count = current_count + :NEW.quantity_number
+        WHERE location_id = :NEW.location_id;
+    END IF;
+    
+    -- Αν έγινε DELETE, μείωσε το location
+    IF DELETING THEN
+        UPDATE locations
+        SET current_count = current_count - :OLD.quantity_number
+        WHERE location_id = :OLD.location_id;
+    END IF;
 END;
 /
 
@@ -289,7 +295,8 @@ EXCEPTION
 END;
 /
 CREATE OR REPLACE PROCEDURE sync_location_config(
-    p_mappings VARCHAR2  -- 'laptop:RACK_A,tablet:RACK_B,smartphone:RACK_C'
+    p_mappings VARCHAR2,
+    p_max_capacity NUMBER DEFAULT 50
 ) AS
     v_start NUMBER := 1;
     v_end NUMBER;
@@ -301,7 +308,6 @@ BEGIN
     -- 1. Απενεργοποίησε όλες τις υπάρχουσες αντιστοιχίσεις
     UPDATE valid_location_mappings SET is_active = 'N';
     
-    -- 2. Δημιουργία/ενεργοποίηση locations και mappings
     LOOP
         v_end := INSTR(p_mappings, ',', v_start);
         IF v_end = 0 THEN
@@ -310,14 +316,20 @@ BEGIN
                 v_product_type := TRIM(SUBSTR(v_pair, 1, INSTR(v_pair, ':') - 1));
                 v_location := TRIM(SUBSTR(v_pair, INSTR(v_pair, ':') + 1));
                 
-                -- 2α. Δημιουργία location αν δεν υπάρχει (με default capacity 50)
+                -- 2. ΔΗΜΙΟΥΡΓΙΑ Η ΕΝΗΜΕΡΩΣΗ LOCATION
                 SELECT COUNT(*) INTO v_exists FROM locations WHERE location_id = v_location;
                 IF v_exists = 0 THEN
                     INSERT INTO locations (location_id, max_capacity, current_count) 
-                    VALUES (v_location, 50, 0);
+                    VALUES (v_location, p_max_capacity, 0);
+                    DBMS_OUTPUT.PUT_LINE('  Created new rack: ' || v_location || ' (capacity: ' || p_max_capacity || ')');
+                ELSE
+                    -- Ενημέρωση max_capacity (αν έχει αλλάξει στο config)
+                    UPDATE locations SET max_capacity = p_max_capacity 
+                    WHERE location_id = v_location;
+                    DBMS_OUTPUT.PUT_LINE('  Updated rack: ' || v_location || ' (capacity: ' || p_max_capacity || ')');
                 END IF;
                 
-                -- 2β. Έλεγχος αν υπάρχει το product_type στο valid_product_types
+                -- 3. Ενημέρωση valid_location_mappings
                 SELECT COUNT(*) INTO v_exists 
                 FROM valid_product_types 
                 WHERE product_type = v_product_type;
@@ -338,14 +350,16 @@ BEGIN
                 v_product_type := TRIM(SUBSTR(v_pair, 1, INSTR(v_pair, ':') - 1));
                 v_location := TRIM(SUBSTR(v_pair, INSTR(v_pair, ':') + 1));
                 
-                -- Δημιουργία location αν δεν υπάρχει
                 SELECT COUNT(*) INTO v_exists FROM locations WHERE location_id = v_location;
                 IF v_exists = 0 THEN
                     INSERT INTO locations (location_id, max_capacity, current_count) 
-                    VALUES (v_location, 50, 0);
+                    VALUES (v_location, p_max_capacity, 0);
+                    DBMS_OUTPUT.PUT_LINE('  Created new rack: ' || v_location);
+                ELSE
+                    UPDATE locations SET max_capacity = p_max_capacity 
+                    WHERE location_id = v_location;
                 END IF;
                 
-                -- Έλεγχος ύπαρξης product_type
                 SELECT COUNT(*) INTO v_exists 
                 FROM valid_product_types 
                 WHERE product_type = v_product_type;
@@ -364,11 +378,9 @@ BEGIN
     END LOOP;
     
     COMMIT;
-    DBMS_OUTPUT.PUT_LINE('✅ Location config and locations table synced');
+    DBMS_OUTPUT.PUT_LINE('✅ Location config synced (capacity: ' || p_max_capacity || ')');
 END;
 /
-
-
 
 -- ============================================
 -- 8. ΕΠΑΛΗΘΕΥΣΗ
@@ -384,16 +396,4 @@ SELECT * from VALID_PRODUCT_TYPES;
 SELECT * from VALID_LOCATION_MAPPINGS;
 SELECT user FROM dual;
 SELECT check_stock('P001', 2) FROM dual;
-
-SET SERVEROUTPUT ON;
-
-BEGIN
-  process_order_proc(1);
-END;
-/
-
-UPDATE inventory
-SET quantity_number = quantity_number - 1
-WHERE product_id = 'P001';
-
-COMMIT;
+SELECT trigger_name, status FROM user_triggers WHERE trigger_name = 'UPDATE_LOCATION_COUNT';
