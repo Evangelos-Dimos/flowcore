@@ -156,16 +156,6 @@ BEGIN
         SET quantity_number = quantity_number - rec.quantity
         WHERE product_id = rec.product_id;
 
-        -- Update locations current_count
-        UPDATE locations l
-        SET current_count = current_count - rec.quantity
-        WHERE l.location_id = (
-            SELECT location_id 
-            FROM inventory 
-            WHERE product_id = rec.product_id 
-            AND ROWNUM = 1
-        );
-
     END LOOP;
 
     -- Mark order as SHIPPED
@@ -189,21 +179,27 @@ END;
 
 CREATE OR REPLACE TRIGGER update_location_count
 AFTER INSERT OR UPDATE OR DELETE ON inventory
-FOR EACH ROW
 BEGIN
-    -- Αν έγινε INSERT ή UPDATE, ενημέρωσε το location της γραμμής
-    IF INSERTING OR UPDATING THEN
-        UPDATE locations
-        SET current_count = current_count + :NEW.quantity_number
-        WHERE location_id = :NEW.location_id;
-    END IF;
-    
-    -- Αν έγινε DELETE, μείωσε το location
-    IF DELETING THEN
-        UPDATE locations
-        SET current_count = current_count - :OLD.quantity_number
-        WHERE location_id = :OLD.location_id;
-    END IF;
+    -- Υπολόγισε όλα τα locations από το inventory
+    UPDATE locations l
+    SET current_count = (
+        SELECT NVL(SUM(quantity_number), 0)
+        FROM inventory i
+        WHERE i.location_id = l.location_id
+    );
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_sync_products_quantity
+AFTER INSERT OR UPDATE OR DELETE ON inventory
+BEGIN
+    -- Συγχρονισμός όλων των products με το inventory
+    UPDATE products p
+    SET quantity = (
+        SELECT NVL(SUM(quantity_number), 0)
+        FROM inventory i
+        WHERE i.product_id = p.product_id
+    );
 END;
 /
 
