@@ -111,6 +111,7 @@
 [INFO] Export complete
 [INFO] Exporting inventory to CSV...
 [INFO] Export complete
+<<<<<<< HEAD
 [INFO] Exporting inventory to CSV...
 [INFO] Export complete
 [INFO] Exporting inventory to CSV...
@@ -123,3 +124,5 @@
 [INFO] Export complete
 [INFO] Export complete
 [INFO] Export complete
+=======
+>>>>>>> 8db12598abd3dfd95171a8bff699a2264e52d78d
