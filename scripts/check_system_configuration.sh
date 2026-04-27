@@ -1,10 +1,11 @@
 #!/bin/bash
-# compile_and_run.sh
-source ../cpp/check_configuration.cpp
-SOURCE="check_configuration.cpp"
-TARGET="check_config_file"
 
-# Έλεγξε αν το source είναι νεότερο από το target
+# check_system_configuration.sh
+
+SOURCE="../cpp/check_configuration.cpp"
+TARGET="../cpp/check_configuration"
+
+# Compile only if needed
 if [ ! -f "$TARGET" ] || [ "$SOURCE" -nt "$TARGET" ]; then
     echo "🔄 Compiling $SOURCE ..."
     g++ -Wall -std=c++11 -o "$TARGET" "$SOURCE"
@@ -15,5 +16,5 @@ if [ ! -f "$TARGET" ] || [ "$SOURCE" -nt "$TARGET" ]; then
     echo "✅ Compilation successful"
 fi
 
-# Εκτέλεση
-./"$TARGET"
+# Run executable
+"$TARGET"
