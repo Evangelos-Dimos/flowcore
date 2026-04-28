@@ -38,28 +38,22 @@ vector<Product> getLowStockProducts(const string& filename, int threshold)
     return lowStock;
 }
 
-int main(int argc, char* argv[]) {
-    int threshold = 3;  // default
-    
-    if (argc >= 2) {
-        threshold = atoi(argv[1]);
-    }
-    
-    vector<Product> lowStock = getLowStockProducts("../tmp/inventory_export.csv", threshold);
-    
-    cout << "=== LOW STOCK ALERT ===" << endl;
+void runLowStockAlert(const string& filename, int threshold)
+{
+    vector<Product> lowStock = getLowStockProducts(filename, threshold);
+
+    cout << "\n=== LOW STOCK ALERT ===" << endl;
     cout << "Threshold: < " << threshold << " items" << endl;
     cout << endl;
-    
+
     if (lowStock.empty()) {
         cout << "✓ No products with low stock" << endl;
-        return 0;
+        return;
     }
-    
+
     cout << "WARNING: The following products need restocking:" << endl;
     for (const auto& p : lowStock) {
-        cout << "  " << p.id << " - " << p.name << " (only " << p.quantity << " left)" << endl;
+        cout << "  " << p.id << " - " << p.name
+             << " (only " << p.quantity << " left)" << endl;
     }
-    
-    return lowStock.size();
 }

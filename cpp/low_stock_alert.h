@@ -17,4 +17,6 @@ struct Product
 // Function declarations
 vector<Product> getLowStockProducts(const string& filename, int threshold);
 
+void runLowStockAlert(const string& filename, int threshold);
+
 #endif
